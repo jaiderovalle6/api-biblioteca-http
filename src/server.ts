@@ -109,6 +109,31 @@ const server = createServer(async (request, response) => {
       return;
     }
 
+    if (method === "GET" && pathname.startsWith("/api/books/")) {
+      const idStr = pathname.replace("/api/books/", "");
+      const id = Number(idStr);
+
+      if (!Number.isInteger(id) || id <= 0) {
+        sendJson(response, 400, {
+          error: "VALIDATION_ERROR",
+          message: "El id debe ser un número entero positivo",
+        });
+        return;
+      }
+
+      const book = books.find((b) => b.id === id);
+      if (!book) {
+        sendJson(response, 404, {
+          error: "BOOK_NOT_FOUND",
+          message: "No existe un libro con el identificador solicitado",
+        });
+        return;
+      }
+
+      sendJson(response, 200, { data: book });
+      return;
+    }
+
     sendJson(response, 404, {
       error: "ROUTE_NOT_FOUND",
       message: "La ruta solicitada no existe",
