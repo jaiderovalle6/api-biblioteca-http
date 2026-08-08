@@ -134,6 +134,31 @@ const server = createServer(async (request, response) => {
       return;
     }
 
+    if (method === "POST" && pathname === "/api/books") {
+      const body = (await readJsonBody(request)) as Partial<Book>;
+
+      if (!body.title || !body.author || !body.publicationYear) {
+        sendJson(response, 400, {
+          error: "VALIDATION_ERROR",
+          message: "title, author y publicationYear son obligatorios",
+        });
+        return;
+      }
+
+      const newBook: Book = {
+        id: books.length + 1,
+        title: body.title,
+        author: body.author,
+        publicationYear: body.publicationYear,
+        available: body.available ?? true,
+      };
+
+      books.push(newBook);
+
+      sendJson(response, 201, { data: newBook });
+      return;
+    }
+
     sendJson(response, 404, {
       error: "ROUTE_NOT_FOUND",
       message: "La ruta solicitada no existe",
