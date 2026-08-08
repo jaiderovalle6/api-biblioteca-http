@@ -23,5 +23,13 @@
   "private": true,
   "engines": {
     "node": ">=20"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jaiderovalle6/api-biblioteca-http.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jaiderovalle6/api-biblioteca-http/issues"
+  },
+  "homepage": "https://github.com/jaiderovalle6/api-biblioteca-http#readme"
 }

@@ -4,6 +4,7 @@ import {
   type ServerResponse,
 } from "node:http";
 import { URL } from "node:url";
+
 interface Book {
   id: number;
   title: string;
@@ -11,7 +12,9 @@ interface Book {
   publicationYear: number;
   available: boolean;
 }
+
 const PORT = Number(process.env.PORT ?? 3000);
+
 const books: Book[] = [
   {
     id: 1,
@@ -28,6 +31,7 @@ const books: Book[] = [
     available: false,
   },
 ];
+
 function sendJson(
   response: ServerResponse,
   statusCode: number,
@@ -36,26 +40,35 @@ function sendJson(
   response.writeHead(statusCode, {
     "Content-Type": "application/json; charset=utf-8",
   });
+
   response.end(JSON.stringify(payload));
 }
+
 async function readJsonBody(request: IncomingMessage): Promise<unknown> {
   const chunks: Buffer[] = [];
+
   for await (const chunk of request) {
     chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
   }
+
   if (chunks.length === 0) {
     return {};
   }
+
   return JSON.parse(Buffer.concat(chunks).toString("utf-8"));
 }
+
 const server = createServer(async (request, response) => {
   try {
     const method = request.method ?? "GET";
+
     const requestUrl = new URL(
       request.url ?? "/",
       `http://${request.headers.host ?? "localhost"}`,
     );
+
     const { pathname, searchParams } = requestUrl;
+
     if (method === "GET" && pathname === "/api/health") {
       sendJson(response, 200, {
         status: "ok",
@@ -64,8 +77,38 @@ const server = createServer(async (request, response) => {
       });
       return;
     }
-    // TODO: implementar los endpoints de libros.
-    // Utilice method, pathname, searchParams y readJsonBody().
+
+    if (method === "GET" && pathname === "/api/books") {
+      let filtered = books;
+
+      const author = searchParams.get("author");
+      const available = searchParams.get("available");
+
+      if (author) {
+        filtered = filtered.filter((b) =>
+          b.author.toLowerCase().includes(author.toLowerCase()),
+        );
+      }
+
+      if (available) {
+        if (available !== "true" && available !== "false") {
+          sendJson(response, 400, {
+            error: "VALIDATION_ERROR",
+            message: "El filtro available solo acepta true o false",
+          });
+          return;
+        }
+        const isAvailable = available === "true";
+        filtered = filtered.filter((b) => b.available === isAvailable);
+      }
+
+      sendJson(response, 200, {
+        data: filtered,
+        total: filtered.length,
+      });
+      return;
+    }
+
     sendJson(response, 404, {
       error: "ROUTE_NOT_FOUND",
       message: "La ruta solicitada no existe",
@@ -80,13 +123,16 @@ const server = createServer(async (request, response) => {
       });
       return;
     }
+
     console.error("Error inesperado:", error);
+
     sendJson(response, 500, {
       error: "INTERNAL_SERVER_ERROR",
       message: "Ocurrió un error interno",
     });
   }
 });
+
 server.listen(PORT, () => {
   console.log(`Servidor disponible en http://localhost:${PORT}`);
 });
