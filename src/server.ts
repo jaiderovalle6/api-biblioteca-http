@@ -195,6 +195,43 @@ const server = createServer(async (request, response) => {
       return;
     }
 
+    if (method === "PATCH" && pathname.startsWith("/api/books/")) {
+      const idStr = pathname.replace("/api/books/", "");
+      const id = Number(idStr);
+
+      if (!Number.isInteger(id) || id <= 0) {
+        sendJson(response, 400, {
+          error: "VALIDATION_ERROR",
+          message: "El id debe ser un número entero positivo",
+        });
+        return;
+      }
+
+      const bookIndex = books.findIndex((b) => b.id === id);
+      if (bookIndex === -1) {
+        sendJson(response, 404, {
+          error: "BOOK_NOT_FOUND",
+          message: "No existe un libro con el identificador solicitado",
+        });
+        return;
+      }
+
+      const body = (await readJsonBody(request)) as Partial<Book>;
+      const existingBook = books[bookIndex];
+
+      // Solo actualiza los campos enviados en el body
+      const patchedBook: Book = {
+        ...existingBook,
+        ...body,
+        id: existingBook.id,
+      };
+
+      books[bookIndex] = patchedBook;
+
+      sendJson(response, 200, { data: patchedBook });
+      return;
+    }
+
     if (method === "DELETE" && pathname.startsWith("/api/books/")) {
       const idStr = pathname.replace("/api/books/", "");
       const id = Number(idStr);
